@@ -85,6 +85,44 @@ CREATE TABLE voiceprints (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+# 问题：
+第一步：进入 Docker 容器
+在你的宿主机命令行（root@VM-12-4-ubuntu）里，输入：
+
+Bash
+
+docker exec -it xiaozhi-esp32-server-db bash
+第二步：登录 MySQL
+进入容器后，命令行提示符会变化。这时，登录 MySQL：
+
+Bash
+
+mysql -u root -p
+然后输入你为 root 用户设置的密码（或者如果你没有设置密码就直接按回车）。
+
+第三步：创建数据库和表（关键步骤）
+成功登录，看到 mysql> 提示符之后，把下面这一整块代码完整地复制并粘贴进去，然后按回车：
+
+SQL
+
+CREATE DATABASE voiceprint_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE voiceprint_db;
+
+CREATE TABLE voiceprints (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  speaker_id VARCHAR(255) NOT NULL UNIQUE,
+  feature_vector LONGBLOB NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_speaker_id (speaker_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+如果一切顺利，MySQL 会执行这些命令，创建好数据库和表，并且不会有任何报错（可能会显示 Query OK, ... rows affected 之类的成功信息）。
+
+这样，你就完成了这关键的第三步。
+要输入的密码在docker-compose_all.yml文件中，默认是123456，设置完 输入exit推出
+
+
 ## 第四步， 配置数据库连接
 
 进入`voiceprint-api`文件夹，创建名字为`data`的文件夹。
@@ -107,6 +145,39 @@ mysql:
 注意！由于你的声纹识别服务是使用docker部署，`host`需要填写成你`mysql所在机器的局域网ip`。
 
 注意！由于你的声纹识别服务是使用docker部署，`host`需要填写成你`mysql所在机器的局域网ip`。
+
+
+# 问题：ip怎么找？
+第一步：找到你的容器正在使用的网络名称
+
+在你的宿主机命令行中，运行以下命令：
+
+Bash
+
+docker network ls
+这会列出所有的 Docker 网络。找到那个和你的项目文件夹名字相关的网络，通常会是 你的项目文件夹名_default 这样的格式。例如，如果你的项目文件夹叫 voiceprint-api，网络名可能就是 voiceprint-api_default。
+
+第二步：查看网络详情，找到 MySQL 容器的 IP 地址
+
+找到网络名之后，使用 inspect 命令来查看这个网络的详细信息。请把下面的 <你的网络名> 换成你上一步找到的真实网络名：
+
+Bash
+
+docker network inspect <你的网络名>
+<img width="2518" height="1180" alt="image" src="https://github.com/user-attachments/assets/1cc1df16-9bac-430e-8d95-6360dec5c603" />
+
+
+总结
+
+你可以把找到的这个 IP 地址（比如 172.18.0.2）填写到你的 .voiceprint.yaml 文件的 host 字段进行临时测试。
+
+但是，我仍然要强调，name resolution 失败的根本原因在于网络配置，而不是“地址”本身有问题。用 IP 地址连接只是暂时绕过了“名称解析”这一步，但问题根源还在。一旦重启，这个临时地址就会失效。
+
+解决这个问题的一劳永逸的方法，还是我之前提到的，通过修改 docker-compose.yml 来修复网络配置。
+
+
+
+
 
 ## 第五步，启动程序
 这个项目是一个很简单的项目，建议使用docker运行。不过如果你不想使用docker运行，你可以参考[这个页面](https://github.com/xinnan-tech/voiceprint-api/blob/main/README.md)使用源码运行。以下是docker运行的方法
