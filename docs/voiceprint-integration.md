@@ -92,18 +92,22 @@ CREATE TABLE voiceprints (
 Bash
 
 docker exec -it xiaozhi-esp32-server-db bash
+
 第二步：登录 MySQL
 进入容器后，命令行提示符会变化。这时，登录 MySQL：
 
+
 Bash
 
+
 mysql -u root -p
+
 然后输入你为 root 用户设置的密码（或者如果你没有设置密码就直接按回车）。
 
 第三步：创建数据库和表（关键步骤）
 成功登录，看到 mysql> 提示符之后，把下面这一整块代码完整地复制并粘贴进去，然后按回车：
 
-SQL
+`
 
 CREATE DATABASE voiceprint_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
